@@ -69,9 +69,10 @@ pub struct InputEvent {
     pub kind: u32,
     pub code: u32,
     pub value: u32,
+    pub device_idx: u32,
 }
 
-dyon_obj!{InputEvent { kind, code, value }}
+dyon_obj!{InputEvent { kind, code, value, device_idx }}
 
 dyon_fn!{fn device_name(obj: RustObject) -> String {
     let mut guard = obj.lock().expect(".lock()");
@@ -92,6 +93,7 @@ dyon_fn!{fn next_events(arr: Vec<Variable>) -> Vec<InputEvent> {
                 kind: evt._type as u32,
                 code: evt.code as u32,
                 value: evt.value as u32,
+                device_idx: i as u32,
             }).collect::<Vec<_>>()
         }
     }

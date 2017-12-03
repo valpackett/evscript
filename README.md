@@ -29,9 +29,41 @@ That's it.
 
 [Dyon]: https://github.com/PistonDevelopers/dyon
 
+## Installation
+
+Something like that (with [cargo]):
+
+```bash
+git clone https://github.com/myfreeweb/evscript
+cd evscript
+cargo build --release
+install -Ss -o root -m 4755 target/release/evscript /usr/local/bin/evscript
+```
+
+You can configure sudo/doas instead of setuid root.
+Or allow yourself access to `/dev/input/*` and `/dev/uinput`, but that allows any random program running as you to work with inputs.
+evscript is designed for setuid, it will (on FreeBSD) sandbox itself with Capsicum.
+
+[cargo]: http://doc.crates.io/index.html
+
 ## Usage
 
-WIP
+A simple script looks like this:
+
+```dyon
+fn main() ~ evdevs, uinput {
+    should_esc := false
+    loop {
+        evts := next_events(evdevs)
+        for i len(evts) {
+            evt := evts[i]
+            xcape(mut should_esc, evt, KEY_CAPSLOCK(), KEY_ESC())
+        }
+    }
+}
+```
+
+Check out the source of the standard library in [src/stdlib.dyon](https://github.com/myfreeweb/evscript/blob/master/src/stdlib.dyon) to see how `xcape` is implemented!
 
 ## Contributing
 

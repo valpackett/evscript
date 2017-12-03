@@ -123,6 +123,7 @@ fn run_script(devs: Vec<Device>, uinput: uinput::Device, script_name: &str, scri
     module_add!(module << device_name [Lt::Default] [Type::Any] Type::Text);
     module_add!(module << next_events [Lt::Default] [Type::Array(Box::new(Type::Any))] Type::Object);
     module_add!(module << emit_event [Lt::Default, Lt::Default] [Type::Any, Type::Object] Type::Bool);
+    error(load_str("stdlib.dyon", Arc::new(include_str!("stdlib.dyon").into()), &mut module));
     error(load_str(script_name, Arc::new(script), &mut module));
     let mut rt = Runtime::new();
     match module.find_function(&Arc::new("main".into()), 0) {
@@ -174,26 +175,7 @@ fn main() {
             println(evts)
             for i len(evts) {
                 evt := evts[i]
-                if evt.kind == 1 {
-                    if (evt.code == 58) && (evt.value == 1) {
-                        should_esc = true
-                    } else if (evt.code == 58) && (evt.value == 0) {
-                        if should_esc {
-                            println("ESC")
-                            _ := emit_event(uinput, { kind: 1, code: 1, value: 1 })
-                            _ := emit_event(uinput, { kind: 0, code: 0, value: 1 })
-                            _ := emit_event(uinput, { kind: 1, code: 1, value: 0 })
-                            _ := emit_event(uinput, { kind: 0, code: 0, value: 1 })
-                        }
-                        should_esc = false
-                    } else { // Pressed something else while holding, cancel
-                        should_esc = false
-                    }
-                }
-                //println(emit_event(uinput, { kind: 1, code: 2, value: 1 }))
-                //println(emit_event(uinput, { kind: 0, code: 0, value: 1 }))
-                //println(emit_event(uinput, { kind: 1, code: 2, value: 0 }))
-                //println(emit_event(uinput, { kind: 0, code: 0, value: 1 }))
+                xcape(mut should_esc, evt, KEY_CAPSLOCK(), KEY_ESC())
             }
         }
     }

@@ -7,12 +7,12 @@ extern crate nix;
 extern crate range;
 extern crate rusty_sandbox;
 
-use std::{env, io, fs, path, process};
+use std::{env, fs, io, path};
 use std::sync::{Arc, Mutex};
 use evdev::{data, raw, uinput, Device};
 use nix::unistd;
 use nix::poll::{poll, EventFlags, PollFd, POLLIN};
-use dyon::{error, load_str, Array, Dfn, FnIndex, Lt, Module, Object, Runtime, RustObject, Type, Variable};
+use dyon::{error, load_str, Array, Dfn, FnIndex, Lt, Module, Runtime, RustObject, Type, Variable};
 use dyon::ast::Current;
 use range::Range;
 
@@ -61,6 +61,26 @@ macro_rules! with_unwrapped_device {
                 ($fn)(dev)
             },
             ref x => panic!("What is this?? {:?}", x),
+        }
+    }
+}
+
+enum ScriptSource {
+    Expr(String),
+    Read(Box<io::Read>),
+}
+
+impl ScriptSource {
+    fn read(self) -> String {
+        match self {
+            ScriptSource::Expr(s) => {
+                format!("fn main() ~ evdevs, uinput {{\n{}\n}}", s.replace(");", ")\n").replace("};", "}\n"))
+            },
+            ScriptSource::Read(mut r) => {
+                let mut result = String::new();
+                let _ = r.read_to_string(&mut result).expect("read_to_string");
+                result
+            },
         }
     }
 }
@@ -163,7 +183,14 @@ fn main() {
                 .short("f")
                 .long("file")
                 .takes_value(true)
-                .help("The script file run, by default - (stdin)"),
+                .help("The script file to run, by default - (stdin)"),
+        )
+        .arg(
+            clap::Arg::with_name("EXPR")
+                .short("e")
+                .long("expr")
+                .takes_value(true)
+                .help("The script expression to run (inside main), overrides the file if present"),
         )
         .arg(
             clap::Arg::with_name("DEV")
@@ -175,21 +202,21 @@ fn main() {
         )
         .get_matches();
 
-    if !matches.is_present("DEV") {
-        eprintln!("No devices provided, exiting. Run with -h to see usage info.");
-        process::exit(1);
-    }
-
-    let mut script_src : Box<io::Read> = match matches.value_of("FILE") {
-        Some("-") | None => Box::new(io::stdin()),
-        Some(x) => Box::new(fs::File::open(x).expect("open()")),
+    let script_src: ScriptSource = match matches.value_of("EXPR") {
+        Some(expr) => ScriptSource::Expr(expr.to_owned()),
+        None => match matches.value_of("FILE") {
+            Some("-") | None => ScriptSource::Read(Box::new(io::stdin())),
+            Some(x) => ScriptSource::Read(Box::new(fs::File::open(x).expect("open()"))),
+        },
     };
 
     let devs = matches
         .values_of_os("DEV")
-        .expect(".values_of_os()")
-        .map(|a| evdev::Device::open(&a).expect("evdev open()"))
-        .collect::<Vec<_>>();
+        .map(|vs| {
+            vs.map(|a| evdev::Device::open(&a).expect("evdev open()"))
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or(Vec::new());
 
     let uinput_path = env::var_os("EVSCRIPT_UINPUT_PATH")
         .and_then(|s| s.into_string().ok())
@@ -198,16 +225,14 @@ fn main() {
 
     drop_privileges();
 
-    let mut script = String::new();
-    let _ = script_src
-        .read_to_string(&mut script)
-        .expect("read_to_string");
+    let script = script_src.read();
     let mut conf = raw::uinput_setup::default();
     conf.set_name("Devicey McDeviceFace").expect("set_name");
     conf.id.bustype = 0x6;
     conf.id.vendor = 69;
     // TODO: read allowed events as a toml comment from the script instead of allowing all keys
     // also can read device name/vendor/product from there
+    // + allow any output from -e mode
     uinput_ioctl!(ui_set_evbit(ubuilder.fd(), data::KEY.number())).expect("ioctl");
     for i in 0..255 {
         uinput_ioctl!(ui_set_keybit(ubuilder.fd(), i)).expect("ioctl");

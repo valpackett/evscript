@@ -79,6 +79,14 @@ For now, only an explicit list of devices is supported.
 There is no hotplugging mode yet.
 You can setup devd/udev to run evscript on each plugged device, but that would run independent instances, not one instance that sees events from all the devices.
 
+Also, you can run it in expression mode, kinda like you would run `xdotool` to just press a key:
+
+```bash
+evscript -e "for i 4 { click_key_chord([KEY_LEFTCTRL(), KEY_C()]); sleep(0.3); }"
+```
+
+Dyon does not have semicolons, so this mode replaces `);` and `};` with `)\n` and `}\n`.
+
 ## Contributing
 
 By participating in this project you agree to follow the [Contributor Code of Conduct](https://www.contributor-covenant.org/version/1/4/).

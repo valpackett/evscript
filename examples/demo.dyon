@@ -1,3 +1,12 @@
+//! [device] # this section is optional, all these fields have nice defaults
+//! name = "evscript demo"
+//! bustype = 6 # https://github.com/cmr/evdev/blob/04761b788fcd6722b6283fb98d1578b81559fd1a/src/lib.rs#L471-L489
+//! vendor = 1
+//! product = 2
+//! version = 3
+//! [events] # this is requried! because the kernel will violently reject events not defined here
+//! keys = ['ESC', 'LEFTSHIFT', '9', '0']
+
 fn main() ~ evdevs, uinput {
     should_esc := false
     should_lshift := false

@@ -51,6 +51,8 @@ You can allow yourself access to `/dev/input/*` and `/dev/uinput` instead of set
 A simple script looks like this:
 
 ```dyon
+//! [events]
+//! keys = ['ESC', 'LEFTSHIFT', '9', '0']
 fn main() ~ evdevs, uinput {
     should_esc := false
     should_lshift := false

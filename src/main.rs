@@ -6,8 +6,12 @@ extern crate evdev;
 extern crate nix;
 extern crate range;
 extern crate rusty_sandbox;
+#[macro_use]
+extern crate serde_derive;
+extern crate toml;
 
 use std::{env, fs, io, path};
+use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use evdev::{data, raw, uinput, Device};
 use nix::unistd;
@@ -71,18 +75,53 @@ enum ScriptSource {
 }
 
 impl ScriptSource {
-    fn read(self) -> String {
+    fn read(self) -> (String, bool) {
         match self {
-            ScriptSource::Expr(s) => {
-                format!("fn main() ~ evdevs, uinput {{\n{}\n}}", s.replace(");", ")\n").replace("};", "}\n"))
-            },
+            ScriptSource::Expr(s) => (
+                format!("fn main() ~ evdevs, uinput {{\n{}\n}}", s.replace(");", ")\n").replace("};", "}\n")),
+                true,
+            ),
             ScriptSource::Read(mut r) => {
                 let mut result = String::new();
                 let _ = r.read_to_string(&mut result).expect("read_to_string");
-                result
+                (result, false)
             },
         }
     }
+}
+
+#[derive(Default, Deserialize)]
+struct DeviceConfig {
+    name: Option<String>,
+    bustype: Option<u16>,
+    vendor: Option<u16>,
+    product: Option<u16>,
+    version: Option<u16>,
+}
+
+impl Into<raw::uinput_setup> for DeviceConfig {
+    fn into(self) -> raw::uinput_setup {
+        let mut conf = raw::uinput_setup::default();
+        conf.set_name(self.name.unwrap_or("Devicey McDeviceFace".into()))
+            .expect("set_name");
+        conf.id.bustype = self.bustype.unwrap_or(0x6);
+        conf.id.vendor = self.vendor.unwrap_or(0x69);
+        conf.id.product = self.product.unwrap_or(69);
+        conf.id.version = self.version.unwrap_or(0);
+        conf
+    }
+}
+
+#[derive(Default, Deserialize)]
+struct EventsConfig {
+    keys: Option<Vec<String>>,
+    // TODO: other events
+}
+
+#[derive(Default, Deserialize)]
+struct ScriptConfig {
+    device: Option<DeviceConfig>,
+    events: EventsConfig,
 }
 
 pub struct InputEvent {
@@ -225,18 +264,37 @@ fn main() {
 
     drop_privileges();
 
-    let script = script_src.read();
-    let mut conf = raw::uinput_setup::default();
-    conf.set_name("Devicey McDeviceFace").expect("set_name");
-    conf.id.bustype = 0x6;
-    conf.id.vendor = 69;
-    // TODO: read allowed events as a toml comment from the script instead of allowing all keys
-    // also can read device name/vendor/product from there
-    // + allow any output from -e mode
-    uinput_ioctl!(ui_set_evbit(ubuilder.fd(), data::KEY.number())).expect("ioctl");
-    for i in 0..255 {
-        uinput_ioctl!(ui_set_keybit(ubuilder.fd(), i)).expect("ioctl");
+    let (script, is_expr_mode) = script_src.read();
+
+    let script_conf_str = &script
+        .lines()
+        .take_while(|l| l.starts_with("//!"))
+        .map(|l| format!("{}\n", l.trim_left_matches("//!")))
+        .collect::<String>();
+    let script_conf;
+    if is_expr_mode {
+        script_conf = ScriptConfig::default();
+        // Just allow all keys
+        uinput_ioctl!(ui_set_evbit(ubuilder.fd(), data::KEY.number())).expect("ioctl");
+        for i in 0..255 {
+            uinput_ioctl!(ui_set_keybit(ubuilder.fd(), i)).expect("ioctl");
+        }
+    } else {
+        script_conf = toml::from_str(script_conf_str).expect("TOML parsing");
+        if let Some(keys) = script_conf.events.keys {
+            uinput_ioctl!(ui_set_evbit(ubuilder.fd(), data::KEY.number())).expect("ioctl");
+            for key in keys {
+                uinput_ioctl!(ui_set_keybit(
+                    ubuilder.fd(),
+                    data::Key::from_str(&format!("KEY_{}", key)).expect("Unknown key in script config") as i32
+                )).expect("ioctl");
+            }
+        }
     }
-    let uinput = ubuilder.setup(conf).expect("uinput setup()");
+
+    let uinput = ubuilder
+        .setup(script_conf.device.unwrap_or(DeviceConfig::default()).into())
+        .expect("uinput setup()");
+
     run_script(devs, uinput, matches.value_of("FILE").unwrap_or("-"), script);
 }

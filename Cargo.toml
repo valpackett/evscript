@@ -11,6 +11,7 @@ repository = "https://github.com/myfreeweb/evscript"
 
 [dependencies]
 #libc = "0"
+clap = "2"
 rusty-sandbox = { git = "https://github.com/myfreeweb/rusty-sandbox", branch = "master" }
 nix = { git = "https://github.com/nix-rust/nix", rev = "edf1bac" }
 evdev = { git = "https://github.com/myfreeweb/evdev", branch = "uinput" }

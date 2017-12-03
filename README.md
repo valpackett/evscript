@@ -65,6 +65,16 @@ fn main() ~ evdevs, uinput {
 
 Check out the source of the standard library in [src/stdlib.dyon](https://github.com/myfreeweb/evscript/blob/master/src/stdlib.dyon) to see how `xcape` is implemented!
 
+And you can run it like this:
+
+```bash
+evscript -f my_script.dyon -d /dev/input/event2 /dev/input/event3
+```
+
+For now, only an explicit list of devices is supported.
+There is no hotplugging mode yet.
+You can setup devd/udev to run evscript on each plugged device, but that would run independent instances, not one instance that sees events from all the devices.
+
 ## Contributing
 
 By participating in this project you agree to follow the [Contributor Code of Conduct](https://www.contributor-covenant.org/version/1/4/).

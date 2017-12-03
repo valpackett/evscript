@@ -1,0 +1,11 @@
+fn main() ~ evdevs, uinput {
+    should_esc := false
+    loop {
+        evts := next_events(evdevs)
+        println(evts)
+        for i len(evts) {
+            evt := evts[i]
+            xcape(mut should_esc, evt, KEY_CAPSLOCK(), KEY_ESC())
+        }
+    }
+}

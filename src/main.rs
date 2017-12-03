@@ -1,3 +1,4 @@
+extern crate clap;
 #[macro_use]
 extern crate dyon;
 #[macro_use]
@@ -6,7 +7,7 @@ extern crate nix;
 extern crate range;
 extern crate rusty_sandbox;
 
-use std::{env, path};
+use std::{env, io, fs, path, process};
 use std::sync::{Arc, Mutex};
 use evdev::{data, raw, uinput, Device};
 use nix::unistd;
@@ -151,20 +152,54 @@ fn drop_privileges() {
 }
 
 fn main() {
-    let args = env::args_os();
-    let devs;
-    if args.len() > 1 {
-        devs = args.skip(1)
-            .map(|a| evdev::Device::open(&a).expect("evdev open()"))
-            .collect::<Vec<_>>();
-    } else {
-        panic!("Need some devices!");
+    let matches = clap::App::new("evscript")
+        .version(env!("CARGO_PKG_VERSION"))
+        .author("Greg V <greg@unrelenting.technology>")
+        .about("A tiny sandboxed Dyon scripting environment for evdev input devices.")
+        .arg(
+            clap::Arg::with_name("FILE")
+                .short("f")
+                .long("file")
+                .takes_value(true)
+                .help("The script file run, by default - (stdin)"),
+        )
+        .arg(
+            clap::Arg::with_name("DEV")
+                .short("d")
+                .long("device")
+                .takes_value(true)
+                .multiple(true)
+                .help("A device to get events from"),
+        )
+        .get_matches();
+
+    if !matches.is_present("DEV") {
+        eprintln!("No devices provided, exiting. Run with -h to see usage info.");
+        process::exit(1);
     }
+
+    let mut script_src : Box<io::Read> = match matches.value_of("FILE") {
+        Some("-") | None => Box::new(io::stdin()),
+        Some(x) => Box::new(fs::File::open(x).expect("open()")),
+    };
+
+    let devs = matches
+        .values_of_os("DEV")
+        .expect(".values_of_os()")
+        .map(|a| evdev::Device::open(&a).expect("evdev open()"))
+        .collect::<Vec<_>>();
+
     let uinput_path = env::var_os("EVSCRIPT_UINPUT_PATH")
         .and_then(|s| s.into_string().ok())
         .unwrap_or("/dev/uinput".to_owned());
     let ubuilder = uinput::Builder::new(&path::Path::new(&uinput_path)).expect("uinput Builder");
+
     drop_privileges();
+
+    let mut script = String::new();
+    let _ = script_src
+        .read_to_string(&mut script)
+        .expect("read_to_string");
     let mut conf = raw::uinput_setup::default();
     conf.set_name("Devicey McDeviceFace").expect("set_name");
     conf.id.bustype = 0x6;
@@ -176,23 +211,5 @@ fn main() {
         uinput_ioctl!(ui_set_keybit(ubuilder.fd(), i)).expect("ioctl");
     }
     let uinput = ubuilder.setup(conf).expect("uinput setup()");
-    run_script(
-        devs,
-        uinput,
-        "main.dyon",
-        // TODO stdlib
-        r#"
-    fn main() ~ evdevs, uinput {
-        should_esc := false
-        loop {
-            evts := next_events(evdevs)
-            println(evts)
-            for i len(evts) {
-                evt := evts[i]
-                xcape(mut should_esc, evt, KEY_CAPSLOCK(), KEY_ESC())
-            }
-        }
-    }
-    "#.into(),
-    );
+    run_script(devs, uinput, matches.value_of("FILE").unwrap_or("-"), script);
 }

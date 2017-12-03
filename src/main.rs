@@ -6,11 +6,12 @@ extern crate nix;
 extern crate range;
 extern crate rusty_sandbox;
 
+use std::{env, path};
 use std::sync::{Arc, Mutex};
 use evdev::{data, raw, uinput, Device};
 use nix::unistd;
 use nix::poll::{poll, EventFlags, PollFd, POLLIN};
-use dyon::{error, load_str, Dfn, FnIndex, Lt, Module, Runtime, Array, Object, RustObject, Type, Variable};
+use dyon::{error, load_str, Array, Dfn, FnIndex, Lt, Module, Object, Runtime, RustObject, Type, Variable};
 use dyon::ast::Current;
 use range::Range;
 
@@ -150,7 +151,7 @@ fn drop_privileges() {
 }
 
 fn main() {
-    let args = std::env::args_os();
+    let args = env::args_os();
     let devs;
     if args.len() > 1 {
         devs = args.skip(1)
@@ -159,21 +160,22 @@ fn main() {
     } else {
         panic!("Need some devices!");
     }
+    let uinput_path = env::var_os("EVSCRIPT_UINPUT_PATH")
+        .and_then(|s| s.into_string().ok())
+        .unwrap_or("/dev/uinput".to_owned());
+    let ubuilder = uinput::Builder::new(&path::Path::new(&uinput_path)).expect("uinput Builder");
+    drop_privileges();
     let mut conf = raw::uinput_setup::default();
     conf.set_name("Devicey McDeviceFace").expect("set_name");
     conf.id.bustype = 0x6;
     conf.id.vendor = 69;
-    // TODO: configurable uinput path
     // TODO: read allowed events as a toml comment from the script instead of allowing all keys
     // also can read device name/vendor/product from there
-    let uinput = uinput::Device::open(&std::path::Path::new("/dev/uinput"), conf, |fd| {
-        uinput_ioctl!(ui_set_evbit(fd, data::KEY.number()))?;
-        for i in 0..255 {
-            uinput_ioctl!(ui_set_keybit(fd, i))?;
-        }
-        Ok(())
-    }).expect("uinput open()");
-    drop_privileges();
+    uinput_ioctl!(ui_set_evbit(ubuilder.fd(), data::KEY.number())).expect("ioctl");
+    for i in 0..255 {
+        uinput_ioctl!(ui_set_keybit(ubuilder.fd(), i)).expect("ioctl");
+    }
+    let uinput = ubuilder.setup(conf).expect("uinput setup()");
     run_script(
         devs,
         uinput,

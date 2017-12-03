@@ -111,7 +111,7 @@ dependencies = [
 [[package]]
 name = "evdev"
 version = "0.10.1"
-source = "git+https://github.com/myfreeweb/evdev?branch=uinput#687212e7987381340c2b8114f8a337d97c2426bc"
+source = "git+https://github.com/myfreeweb/evdev?branch=uinput#aa9a403f915a6094465175a306d459dfe3f198d0"
 dependencies = [
  "bitflags 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "fixedbitset 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",

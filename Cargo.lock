@@ -2,7 +2,7 @@
 name = "evscript"
 version = "0.0.0"
 dependencies = [
- "dyon 0.26.0",
+ "dyon 0.26.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "evdev 0.10.1 (git+https://github.com/myfreeweb/evdev?branch=uinput)",
  "nix 0.10.0-pre (git+https://github.com/nix-rust/nix?rev=edf1bac)",
  "num 0.1.41 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -97,6 +97,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "dyon"
 version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "lazy_static 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston_meta 0.29.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -646,6 +647,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum core-foundation-sys 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "065a5d7ffdcbc8fa145d6f0746f3555025b9097a9e9cda59f7467abae670c78d"
 "checksum crypt32-sys 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e34988f7e069e0b2f3bfc064295161e489b2d4e04a2e4248fb94360cdf00b4ec"
 "checksum dtoa 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "09c3753c3db574d215cba4ea76018483895d7bff25a31b49ba45db21c48e50ab"
+"checksum dyon 0.26.0 (registry+https://github.com/rust-lang/crates.io-index)" = "aa97e743bc0538098196dd4b5f570e5c44039f254aba490cbf1c311cae912be5"
 "checksum evdev 0.10.1 (git+https://github.com/myfreeweb/evdev?branch=uinput)" = "<none>"
 "checksum fixedbitset 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)" = "85cb8fec437468d86dc7c83ca7cfc933341d561873275f22dd5eedefa63a6478"
 "checksum foreign-types 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "f6f339eb8adc052cd2ca78910fda869aefa38d22d5cb648e6485e4d3fc06f3b1"

@@ -8,6 +8,7 @@ extern crate rusty_sandbox;
 
 use std::sync::{Arc, Mutex};
 use evdev::{data, raw, uinput, Device};
+use nix::unistd;
 use nix::poll::{poll, EventFlags, PollFd, POLLIN};
 use dyon::{error, load_str, Dfn, FnIndex, Lt, Module, Runtime, Array, Object, RustObject, Type, Variable};
 use dyon::ast::Current;
@@ -137,6 +138,17 @@ fn run_script(devs: Vec<Device>, uinput: uinput::Device, script_name: &str, scri
     error(rt.run(&Arc::new(module)));
 }
 
+fn drop_privileges() {
+    if unistd::geteuid().is_root() {
+        unistd::setgid(unistd::getgid()).expect("setegid()");
+        unistd::setgroups(&[]).expect("setgroups()");
+        unistd::chdir("/dev/input".into()).expect("chdir()");
+        unistd::chroot("/dev/input".into()).expect("chroot()");
+        unistd::setuid(unistd::getuid()).expect("setegid()");
+    }
+    rusty_sandbox::Sandbox::new().sandbox_this_process();
+}
+
 fn main() {
     let args = std::env::args_os();
     let devs;
@@ -161,7 +173,7 @@ fn main() {
         }
         Ok(())
     }).expect("uinput open()");
-    rusty_sandbox::Sandbox::new().sandbox_this_process();
+    drop_privileges();
     run_script(
         devs,
         uinput,

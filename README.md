@@ -40,9 +40,9 @@ cargo build --release
 install -Ss -o root -m 4755 target/release/evscript /usr/local/bin/evscript
 ```
 
-You can configure sudo/doas instead of setuid root.
-Or allow yourself access to `/dev/input/*` and `/dev/uinput`, but that allows any random program running as you to work with inputs.
-evscript is designed for setuid, it will (on FreeBSD) sandbox itself with Capsicum.
+evscript is designed for setuid root: right after opening the devices (before executing the script) it drops privileges, chroots and (on FreeBSD) sandboxes itself with Capsicum.
+
+You can allow yourself access to `/dev/input/*` and `/dev/uinput` instead of setuid, but that would allow any random program running as you to work with inputs.
 
 [cargo]: http://doc.crates.io/index.html
 
@@ -67,7 +67,7 @@ Check out the source of the standard library in [src/stdlib.dyon](https://github
 
 ## Contributing
 
-By participating in this project you agree to follow the [Contributor Code of Conduct](http://contributor-covenant.org/version/1/4/).
+By participating in this project you agree to follow the [Contributor Code of Conduct](https://www.contributor-covenant.org/version/1/4/).
 
 [The list of contributors is available on GitHub](https://github.com/myfreeweb/evscript/graphs/contributors).
 

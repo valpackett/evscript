@@ -13,13 +13,22 @@ fn click_key(key: f64) ~ uinput {
     release_key(key)
 }
 
-fn xcape(mut state: bool, evt: object, watch_key: f64, emit_key: f64) ~ uinput {
+fn click_key_chord(keys: []) ~ uinput {
+    for i len(keys) {
+        press_key(keys[i])
+    }
+    for i len(keys) {
+        release_key(keys[i])
+    }
+}
+
+fn xcape(mut state: bool, evt: object, watch_key: f64, emit_key_chord: []) ~ uinput {
     if evt.kind == EV_KEY() {
         if (evt.code == watch_key) && (evt.value == 1) {
             state = true
         } else if (evt.code == watch_key) && (evt.value == 0) {
             if state {
-                click_key(emit_key)
+                click_key_chord(emit_key_chord)
             }
             state = false
         } else { // Pressed something else while holding, cancel

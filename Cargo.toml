@@ -16,7 +16,7 @@ rusty-sandbox = { git = "https://github.com/myfreeweb/rusty-sandbox", branch = "
 nix = { git = "https://github.com/nix-rust/nix", rev = "edf1bac" }
 evdev = { git = "https://github.com/myfreeweb/evdev", branch = "uinput" }
 #evdev = { path = "../../cmr/evdev" }
-dyon = { version = "0.26", features = ["debug_resolve"] }
+dyon = { version = "0.30", features = ["debug_resolve"] }
 #dyon = { path = "../../PistonDevelopers/dyon", features = ["debug_resolve"] }
 serde = "1.0"
 serde_derive = "1.0"

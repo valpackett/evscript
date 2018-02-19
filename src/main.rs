@@ -245,7 +245,7 @@ fn main() {
         Some(expr) => ScriptSource::Expr(expr.to_owned()),
         None => match matches.value_of("FILE") {
             Some("-") | None => ScriptSource::Read(Box::new(io::stdin())),
-            Some(x) => ScriptSource::Read(Box::new(fs::File::open(x).expect("open()"))),
+            Some(x) => ScriptSource::Read(Box::new(fs::File::open(x).expect("script open()"))),
         },
     };
 
@@ -275,19 +275,19 @@ fn main() {
     if is_expr_mode {
         script_conf = ScriptConfig::default();
         // Just allow all keys
-        uinput_ioctl!(ui_set_evbit(ubuilder.fd(), data::KEY.number())).expect("ioctl");
+        uinput_ioctl!(ui_set_evbit(ubuilder.fd(), data::KEY.number())).expect("ioctl set_evbit");
         for i in 0..255 {
-            uinput_ioctl!(ui_set_keybit(ubuilder.fd(), i)).expect("ioctl");
+            uinput_ioctl!(ui_set_keybit(ubuilder.fd(), i)).expect("ioctl set_keybit");
         }
     } else {
         script_conf = toml::from_str(script_conf_str).expect("TOML parsing");
         if let Some(keys) = script_conf.events.keys {
-            uinput_ioctl!(ui_set_evbit(ubuilder.fd(), data::KEY.number())).expect("ioctl");
+            uinput_ioctl!(ui_set_evbit(ubuilder.fd(), data::KEY.number())).expect("ioctl set_evbit");
             for key in keys {
                 uinput_ioctl!(ui_set_keybit(
                     ubuilder.fd(),
                     data::Key::from_str(&format!("KEY_{}", key)).expect("Unknown key in script config") as i32
-                )).expect("ioctl");
+                )).expect("ioctl set_keybit");
             }
         }
     }

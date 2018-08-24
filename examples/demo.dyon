@@ -4,7 +4,7 @@
 //! vendor = 1
 //! product = 2
 //! version = 3
-//! [events] # this is requried! because the kernel will violently reject events not defined here
+//! [events] # this is required! because the kernel will violently reject events not defined here
 //! keys = ['ESC', 'LEFTSHIFT', '9', '0']
 
 fn main() ~ evdevs, uinput {

@@ -15,7 +15,7 @@ use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use evdev::{data, raw, uinput, Device};
 use nix::unistd;
-use nix::poll::{poll, EventFlags, PollFd, POLLIN};
+use nix::poll::{poll, EventFlags, PollFd};
 use dyon::{error, load_str, Array, Dfn, FnIndex, Lt, Module, Runtime, RustObject, Type, Variable};
 use dyon::ast::Current;
 use range::Range;
@@ -143,9 +143,9 @@ dyon_fn!{fn device_name(obj: RustObject) -> String {
 dyon_fn!{fn next_events(arr: Vec<Variable>) -> Vec<InputEvent> {
     loop {
         let mut pfds = arr.iter().map(|var| PollFd::new(
-                with_unwrapped_device!(var, |dev : &mut Device| dev.fd()), POLLIN)).collect::<Vec<_>>();
+                with_unwrapped_device!(var, |dev : &mut Device| dev.fd()), EventFlags::POLLIN)).collect::<Vec<_>>();
         let _ = poll(&mut pfds, -1).expect("poll()");
-        if let Some(i) = pfds.iter().position(|pfd| pfd.revents().unwrap_or(EventFlags::empty()).contains(POLLIN)) {
+        if let Some(i) = pfds.iter().position(|pfd| pfd.revents().unwrap_or(EventFlags::empty()).contains(EventFlags::POLLIN)) {
             let evts = with_unwrapped_device!(
                 &arr[i as usize], |dev : &mut Device| dev.events().expect(".events()").collect::<Vec<_>>());
             return evts.iter().map(|evt| InputEvent {

@@ -37,6 +37,25 @@ fn xcape(mut state: bool, evt: object, watch_key: f64, emit_key_chord: []) ~ uin
     }
 }
 
+
+fn xcape_sequence(mut state: bool, evt: object, watch_key: f64, emit_key_chord_sequence: []) ~ uinput {
+    if evt.kind == EV_KEY() {
+        if (evt.code == watch_key) && (evt.value == 1) {
+            state = true
+        } else if (evt.code == watch_key) && (evt.value == 0) {
+            if state {
+                for i len(emit_key_chord_sequence) {
+                    click_key_chord(emit_key_chord_sequence[i])
+                    sleep(0.001)
+                }
+            }
+            state = false
+        } else { // Pressed something else while holding, cancel
+            state = false
+        }
+    }
+}
+
 EV_SYN() = 0
 EV_KEY() = 1
 EV_REL() = 2

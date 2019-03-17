@@ -69,6 +69,14 @@ fn main() ~ evdevs, uinput {
 }
 ```
 
+If you want to emit several keys use xcape_sequence instead of xcape.
+
+```dyon
+xcape_sequence(mut should_lshift, evt, KEY_LEFTSHIFT(), [[KEY_LEFTSHIFT(), KEY_9()], [KEY_LEFTSHIFT(), KEY_0()], [KEY_LEFT()]])
+```
+
+The above line types a pair of parentheses and moves between them, when you press the left shift key.
+
 Check out the source of the standard library in [src/stdlib.dyon](https://github.com/myfreeweb/evscript/blob/master/src/stdlib.dyon) to see how `xcape` is implemented!
 
 And you can run it like this:

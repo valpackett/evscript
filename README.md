@@ -59,7 +59,7 @@ fn main() ~ evdevs, uinput {
     should_rshift := false
     loop {
         evts := next_events(evdevs)
-        for i len(evts) {
+        for i {
             evt := evts[i]
             xcape(mut should_esc, evt, KEY_CAPSLOCK(), [KEY_ESC()])
             xcape(mut should_lshift, evt, KEY_LEFTSHIFT(), [KEY_LEFTSHIFT(), KEY_9()])

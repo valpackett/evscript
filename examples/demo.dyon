@@ -13,7 +13,7 @@ fn main() ~ evdevs, uinput {
     should_rshift := false
     loop {
         evts := next_events(evdevs)
-        for i len(evts) {
+        for i {
             evt := evts[i]
             println("Event on " + device_name(evdevs[evt.device_idx]) + " | kind " +
                 str(evt.kind) + "	code " + str(evt.code) + "	value " + str(evt.value))

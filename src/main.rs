@@ -71,7 +71,7 @@ macro_rules! with_unwrapped_device {
 
 enum ScriptSource {
     Expr(String),
-    Read(Box<io::Read>),
+    Read(Box<dyn io::Read>),
 }
 
 impl ScriptSource {
@@ -269,7 +269,7 @@ fn main() {
     let script_conf_str = &script
         .lines()
         .take_while(|l| l.starts_with("//!"))
-        .map(|l| format!("{}\n", l.trim_left_matches("//!")))
+        .map(|l| format!("{}\n", l.trim_start_matches("//!")))
         .collect::<String>();
     let script_conf;
     if is_expr_mode {

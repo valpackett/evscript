@@ -4,7 +4,6 @@ extern crate dyon;
 #[macro_use]
 extern crate evdev;
 extern crate nix;
-extern crate range;
 extern crate rusty_sandbox;
 #[macro_use]
 extern crate serde_derive;
@@ -15,17 +14,15 @@ use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use evdev::{data, raw, uinput, Device};
 use nix::unistd;
-use nix::poll::{poll, EventFlags, PollFd};
-use dyon::{error, load_str, Array, Dfn, FnIndex, Lt, Module, Runtime, RustObject, Type, Variable};
-use dyon::ast::Current;
-use range::Range;
+use nix::poll::{poll, PollFlags as EventFlags, PollFd};
+use dyon::{error, load_str, Array, Dfn, Lt, Module, Runtime, RustObject, Type, Variable};
 
 macro_rules! module_add {
     ($mod:ident << $fun:ident [$($lt:expr),*] [$($ty:expr),*] $ret:expr) => {
         $mod.add(
             Arc::new(stringify!($fun).into()),
             $fun,
-            Dfn { lts: vec![$($lt),*], tys: vec![$($ty),*], ret: $ret }
+            Dfn { lts: vec![$($lt),*], tys: vec![$($ty),*], ret: $ret, ext: vec![], lazy: &[] }
         )
     }
 }
@@ -36,23 +33,6 @@ macro_rules! wrap_var {
     };
     (arr $typ:ident, $value:expr) => {
         Variable::Array(Arc::new($value.into_iter().map(|o| wrap_var!($typ, o)).collect::<Vec<_>>()) as Array)
-    };
-}
-
-macro_rules! main_current_add {
-    ($rt:ident $main:ident << $mutability:ident $name:ident = $var:expr) => {{
-        let input_var : Arc<String> = Arc::new(stringify!($name).into());
-        $main.currents.push(Current {
-            name: input_var.clone(),
-            source_range: Range::empty(0),
-            mutable: $mutability,
-        });
-        $rt.local_stack.push((input_var.clone(), $rt.stack.len()));
-        $rt.current_stack.push((input_var, $rt.stack.len()));
-        $rt.stack.push($var);
-    }};
-    ($rt:ident $main:ident << $name:ident ($($typ:ident) +) = $obj:expr) => {
-        main_current_add!($rt $main << false $name = wrap_var!($($typ) +, $obj))
     };
 }
 
@@ -184,20 +164,16 @@ dyon_fn!{fn emit_event(obj: RustObject, evt_v: Variable) -> bool {
 
 fn run_script(devs: Vec<Device>, uinput: uinput::Device, script_name: &str, script: String) {
     let mut module = Module::new();
-    module_add!(module << device_name [Lt::Default] [Type::Any] Type::Text);
+    module_add!(module << device_name [Lt::Default] [Type::Any] Type::Str);
     module_add!(module << next_events [Lt::Default] [Type::Array(Box::new(Type::Any))] Type::Object);
     module_add!(module << emit_event [Lt::Default, Lt::Default] [Type::Any, Type::Object] Type::Bool);
     error(load_str("stdlib.dyon", Arc::new(include_str!("stdlib.dyon").into()), &mut module));
     error(load_str(script_name, Arc::new(script), &mut module));
     let mut rt = Runtime::new();
-    match module.find_function(&Arc::new("main".into()), 0) {
-        FnIndex::Loaded(i) => {
-            let main_fun = &mut module.functions[i as usize];
-            main_current_add!(rt main_fun << evdevs (arr rustobj) = devs);
-            main_current_add!(rt main_fun << uinput (rustobj) = uinput);
-        },
-        x => panic!("Weird main function: {:?}", x),
-    }
+    rt.push(wrap_var!(arr rustobj, devs));
+    rt.current_stack.push((Arc::new("evdevs".to_string()), rt.stack.len() - 1));
+    rt.push(wrap_var!(rustobj, uinput));
+    rt.current_stack.push((Arc::new("uinput".to_string()), rt.stack.len() - 1));
     error(rt.run(&Arc::new(module)));
 }
 

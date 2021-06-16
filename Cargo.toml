@@ -21,5 +21,4 @@ dyon = { version = "0", default-features = false, features = ["debug_resolve"] }
 serde = "1.0"
 serde_derive = "1.0"
 toml = "0.4"
-range = "0"
 num = "0"

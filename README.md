@@ -2,7 +2,7 @@ In the X11 world, we had wonderful programs like [xcape] and [xdotool] that inje
 In the brave new world of Wayland, security is king, so there's no access to global input.
 No keyloggers, no geeky keyboard tricks, no text macro expanders, no UI testing/automation, screw you.
 
-Wayland compositor authors could have agreed on a protocol like [this one](https://gist.github.com/myfreeweb/7c656d535ae1c5a1336f29d2c1473726) to allow all this useful functionality, but with secure access control, just like on macOS where this requires ticking a checkbox in accessibility settings.
+Wayland compositor authors could have agreed on a protocol like [this one](https://gist.github.com/unrelentingtech/7c656d535ae1c5a1336f29d2c1473726) to allow all this useful functionality, but with secure access control, just like on macOS where this requires ticking a checkbox in accessibility settings.
 But no, their attitude has been "screw you, because security".
 Oh well.
 
